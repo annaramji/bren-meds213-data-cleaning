@@ -71,7 +71,7 @@ snowsurvey_clean_water <- snowsurvey_clean %>%
 # > snowsurvey_clean_water %>% filter(Water_cover > 100) # returns 1 entry
 # > snowsurvey_clean_water %>% filter(Water_cover < 0) # returns 0 entries
 
-# there is one entry in which Water_cover is 353, Snow_cover is 45, and Land_cover is -298... Total_cover is somehow 100. I think it's possible that they meant to put 35 for Water_cover and 20 for Land_cover, but I can't actually assume that so I'll set it to NA for now.  
+# there is one entry in which Water_cover is 353, Snow_cover is 45, and Land_cover is -298... Total_cover is somehow 100. I think it's possible that they meant to put 35 for Water_cover and 20 for Land_cover, but I can't actually assume that so I'll set it to NA for now.  Seems like we should remove this row entirely since something seems to have gone wrong and makes me doubt the rest of the information in that entry. 
 
 snowsurvey_clean_water <- snowsurvey_clean_water %>% 
   mutate(Water_cover = ifelse(Water_cover > 100, NA, Water_cover)) # replace values over 100 with NA 
@@ -121,12 +121,38 @@ snowsurvey_clean_land <- snowsurvey_clean_land %>%
 # snowsurvey_clean_land %>% filter(Land_cover < 0) # returns 0 entries
 ```
 
-Use the relationship between the three cover columns (Snow, Water, Land) to infer missing values where possible and recompute the Total_cover column
+Use the relationship between the three cover columns (Snow, Water, Land) to infer missing values (NAs?) where possible and recompute the Total_cover column
 
+question: turn NAs to 0s if the other columns add to 100?
 
 ```{r}
+# infer missing value (pseudo-code)
+
+# check that column a + b + c = total_cover
+# if NA in any of those (a, b, or c) and total_cover
+
+# if Snow_cover + Water_cover + Land_cover > 100, Total_cover = NA (inspect these rows first)
+
+# make conditional: if column a + b = 100 (& Total_cover == 100?) and c is NA, set c to 0
+# if column b + c = 100 and a is NA, set a to 0
+# if column a + c = 100 and b is NA, set b to 0
+
+# make a copy of the most updated cleaned cover df
+cover_snowsurvey_clean <- snowsurvey_clean_land
 
 
+cover_snowsurvey_clean <- cover_snowsurvey_clean %>% 
+  mutate(
+    Total_cover = case_when(
+      (Total_cover = Snow_cover + Water_cover + Land_cover) & (Total_cover == 100) ~ Total_cover,
+      NA # not sure about this (I'd rather inspect visually and figure out what's going on)
+    ),
+    Snow_cover = case_when(
+      (Water_cover + Land_cover = Total_cover) & (Snow_cover == NA) ~ 0,
+      Snow_cover
+    )
+    
+  )
 
 ```
 

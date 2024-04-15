@@ -140,19 +140,47 @@ question: turn NAs to 0s if the other columns add to 100?
 # make a copy of the most updated cleaned cover df
 cover_snowsurvey_clean <- snowsurvey_clean_land
 
+total_cover_cleaned <- snowsurvey_clean_land %>% 
+  mutate(total_clean = ifelse((Snow_cover + Land_cover + Water_cover) == 100, Total_cover, NA))
 
-cover_snowsurvey_clean <- cover_snowsurvey_clean %>% 
+total_cover_cleaned %>% 
+  filter(is.na(total_clean))
+
+
+
+total_snowsurvey_clean <- cover_snowsurvey_clean %>%
   mutate(
-    Total_cover = case_when(
-      (Total_cover = Snow_cover + Water_cover + Land_cover) & (Total_cover == 100) ~ Total_cover,
-      NA # not sure about this (I'd rather inspect visually and figure out what's going on)
+    # When total cover = snow + water + land AND total cover == 100, keep value of total cover. Else, set to NA
+    total_clean = case_when(
+      ((Total_cover == Snow_cover + Water_cover + Land_cover) & (Total_cover == 100)) ~ Total_cover,
+      .default = NA # not confident about this (I'd rather inspect visually and figure out what's going on) but it does act as a flag that something in that row is amiss.
     ),
-    Snow_cover = case_when(
-      (Water_cover + Land_cover = Total_cover) & (Snow_cover == NA) ~ 0,
-      Snow_cover
-    )
     
-  )
+    # When water cover + land cover == total cover AND total cover == 100 AND snow cover is NA, replace snow cover with 0. Else, just keep original values for snow cover.
+    Snow_cover = case_when(
+      (Water_cover + Land_cover == Total_cover) & (Total_cover == 100) & (Snow_cover == NA) ~ 0,
+      .default = Snow_cover
+    ),
+    
+    # When snow cover + land cover == total cover AND total cover == 100 AND water cover is NA, replace that NA with 0. Else, just keep original values for water cover.
+    Water_cover = case_when(
+      (Snow_cover + Land_cover == Total_cover) & (Total_cover == 100) & (Water_cover == NA) ~ 0,
+      .default = Water_cover
+    ),
+    
+    # When water cover + snow cover == total cover AND total cover == 100 AND land cover is NA, replace that NA with 0. Else, just keep original values for land cover.
+    Land_cover = case_when(
+      (Water_cover + Snow_cover == Total_cover) & (Total_cover == 100) & (Land_cover == NA) ~ 0,
+      .default = Land_cover
+    ),
+    
+    # when all 3 columns (4 columns) are 0, set all values to NA
+)
 
+
+# at site barr in 2010, there are many entries that appear to only be recording Snow_cover (has an integer, the others are 0 and Total_cover == Snow_cover).
+# for these, I set Total_cover to NA unless Snow_cover == 100 (Snow_cover + Water_cover + Land_cover = Total_cover & != 100, set to NA)
+# when Snow_cover =0 and 
+# when all 3 columns (4 columns) are 0, set all values to NA
 ```
 

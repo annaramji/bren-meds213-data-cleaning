@@ -1,9 +1,10 @@
 ---
 title: "EDS 213 Assignment 2: Data Cleaning"
-name: "Anna Ramji"
+author: "Anna Ramji"
 format: html
 ---
 
+my fork of the class repo: <https://github.com/annaramji/bren-meds213-data-cleaning>
 
 
 ```{r}

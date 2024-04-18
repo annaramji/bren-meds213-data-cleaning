@@ -152,12 +152,46 @@ snowsurvey_clean_cover <- snowsurvey_clean_land
 
 # Clean NAs, set conditions to add NAs and replace elligible NAs with 0s. 
 total_snowsurvey_clean <- snowsurvey_clean_cover %>%
-    
-  rowwise() %>% # to perform mathematical operations row-wise (sum of specified columns)
-  
   mutate(
-    # note: creating new total_clean column so that I can keep the <100 values in Total_cover as a flag for issues with the data
-    # ---------------- total_clean = NA when Total_cover != 100 or != sum of other cover type columns --------------
+    # I should comment out these first steps out because I did it more succinctly later on, but I'd like to keep it for my own reference
+    # When water cover + land cover == total cover AND total cover == 100 AND snow cover is NA, replace snow cover with 0. Else, just keep original values for snow cover.
+    Snow_cover = case_when(
+      ((Water_cover + Land_cover == Total_cover) & (Total_cover == 100) & (is.na(Snow_cover))) ~ 0,
+      .default = Snow_cover
+    ),
+    
+    # When snow cover + land cover == total cover AND total cover == 100 AND water cover is NA, replace that NA with 0. Else, just keep original values for water cover.
+    Water_cover = case_when(
+      ((Snow_cover + Land_cover == Total_cover) & (Total_cover == 100) & (is.na(Water_cover))) ~ 0,
+      .default = Water_cover
+    ),
+    
+    # When water cover + snow cover == total cover AND total cover == 100 AND land cover is NA, replace that NA with 0. Else, just keep original values for land cover.
+    # Land_cover = case_when(
+    #   ((Water_cover + Snow_cover == Total_cover) & (Total_cover == 100) & (is.na(Land_cover))) ~ 0,
+    #   .default = Land_cover
+    # ), 
+    # when all 4 columns are 0, set all values to NA (not much different from that anyway, but we don't want those extra empty 0s to be impacting any stats we try to pull from our dataset) (ideally I'd use a mutate + across here, but I couldn't get that to work)
+    Land_cover = case_when(
+      (Land_cover == 0 & Water_cover == 0 & Snow_cover == 0 & Total_cover == 0) ~ NA,
+      .default = Land_cover
+    ),
+    Water_cover = case_when(
+      (Land_cover == 0 & Water_cover == 0 & Snow_cover == 0 & Total_cover == 0) ~ NA,
+      .default = Water_cover
+    ),
+    Snow_cover = case_when(
+      (Land_cover == 0 & Water_cover == 0 & Snow_cover == 0 & Total_cover == 0) ~ NA,
+      .default = Snow_cover
+    ),
+    total_clean = case_when(
+      (Land_cover == 0 & Water_cover == 0 & Snow_cover == 0 & Total_cover == 0) ~ NA,
+      .default = Total_cover
+    )
+  ) %>%
+  rowwise() %>% # to perform mathematical operations rowwise (sum of specified columns)
+  mutate(
+    # note: new total_clean column so that I can keep the <100 values in Total_cover as a flag for issues with the data
     # When total cover = snow + water + land AND total cover == 100, keep value of total cover. Else, set to NA (make a new column name here)
     total_clean = case_when(
       # When Total_cover is equal to the sum of snow, water, and land cover (remove NAs in this part of the operation) AND total cover is equal to 100, keep value for total cover. Else, replace with NA.
@@ -165,70 +199,29 @@ total_snowsurvey_clean <- snowsurvey_clean_cover %>%
       .default = NA # not confident about this (I'd rather inspect visually and figure out what's going on) but it does act as a flag that something in that row is amiss.
     ),
     
-    # ---------- replace NAs with 0s where appropriate -------------------------
-    # overall concept for this section: 
-    # if/when total cover == sum of other 2 columns (even if one of those is NA), AND total cover == 100 AND column currently is NA, replace NA with 0. Else, keep original value for column.
-    
-    # When total cover == water cover + land cover (even if one of them == NA) AND total cover == 100 AND snow cover is NA, replace snow cover with 0. Else, just keep original values for snow cover.
     Snow_cover = case_when(
+      # if/when total cover == sum of other 2 columns (even if one of those is NA), AND total cover == 100 AND column currently is NA, replace NA with 0, 
       ((Total_cover == sum(Water_cover, Land_cover, na.rm = TRUE)) & (Total_cover == 100) & (is.na(Snow_cover))) ~ 0,
       .default = Snow_cover # else keep original value
     ),
     
-    # When total cover == snow cover + land cover (even if one of them == NA) AND total cover == 100 AND water cover is NA, replace that NA with 0. Else, just keep original values for water cover.
     Water_cover = case_when(
+      # if/when total cover == sum of other 2 columns (even if one of those is NA), AND total cover == 100 AND column currently is NA, replace NA with 0, 
       ((Total_cover == sum(Snow_cover, Land_cover, na.rm = TRUE)) & (Total_cover == 100) & (is.na(Water_cover))) ~ 0,
       .default = Water_cover # else keep original value
     ),
     
-    # When total cover == water cover + snow cover (even if one of them == NA) AND total cover == 100 AND land cover is NA, replace that NA with 0. Else, just keep original values for land cover.
     Land_cover = case_when(
+      # if/when total cover == sum of other 2 columns (even if one of those is NA), AND total cover == 100 AND column currently is NA, replace NA with 0, 
       ((Total_cover == sum(Snow_cover, Water_cover, na.rm = TRUE)) & (Total_cover == 100) & (is.na(Land_cover))) ~ 0,
       .default = Land_cover # else keep original value
-    )
-  ) %>% 
-  
-  mutate(
-    
-    # ------------- replace 0s with NAs where appropriate ---------------------
-    # Overall concept for this section:
-    # when all 4 columns are 0, set all values to NA (not much different from that anyway, but we don't want those extra empty 0s to be impacting any stats we try to pull from our dataset) (ideally I'd use a mutate + across here, but I couldn't get that to work)
-    
-    Snow_cover = case_when(
-      ((0 == sum(Snow_cover, Water_cover, Land_cover, na.rm = TRUE))) ~ NA,
-      .default = Snow_cover # else keep original value
     ),
     
-    Water_cover = case_when(
-      ((0 == sum(Snow_cover, Water_cover, Land_cover, na.rm = TRUE))) ~ NA,
-      .default = Water_cover # else keep original value
-    ),
-    
-     Land_cover = case_when(
-      ((0 == sum(Snow_cover, Water_cover, Land_cover, na.rm = TRUE))) ~ NA,
-      .default = Land_cover # else keep original value
-    )
-    
-    # leaving Total_cover in tact as a flag for "bad"/erroneous data.
     
   ) %>% 
-  # moving new total_clean column after Total_cover column for easier direct visual comparison
   relocate("total_clean", .after = "Total_cover")
 
-# view output
-total_snowsurvey_clean
 
-total_snowsurvey_clean %>% 
-  filter(is.na(total_clean)) %>%
-  select(-Notes, -Observer, -Location)
-
-# 5,407 rows!
-
-#total_snowsurvey_clean %>% filter(is.na(Water_cover))
-```
-
-
-```{r}
 # testing to see if I can set all values to NA if all values are 0 and/or NA (wouldn't want 0s that are actually NAs to be impacting any algebraic operation performed on those columns)
 # this ended up not working (and messing up my cleaned dataframe)
 # total_snowsurvey_clean_2 <- total_snowsurvey_clean %>% 
@@ -245,8 +238,9 @@ total_snowsurvey_clean %>%
 # total_snowsurvey_clean_2 %>% 
 #   filter(is.na(total_clean)) %>% 
 #   select(-Notes, -Observer, -Location)
-```
 
+total_snowsurvey_clean_2
+```
 
 Outputting: all_cover_fixed_YOURNAME.csv in the data/processed folder
 
@@ -255,7 +249,7 @@ Outputting: all_cover_fixed_YOURNAME.csv in the data/processed folder
 # Save output as all_cover_fixed_YOURNAME.csv
 
 # note: total_clean is the new cleaned Total_cover column
-write_csv(total_snowsurvey_clean, file.path(datadir_processed, "all_cover_fixed_ANNARAMJI.csv"))
+write_csv(total_snowsurvey_clean_2, file.path(datadir_processed, "all_cover_fixed_ANNARAMJI.csv"))
 
 ```
 

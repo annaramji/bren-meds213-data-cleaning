@@ -107,17 +107,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co"># file names</span></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>datadir_raw <span class="ot">&lt;-</span> <span class="st">"data/raw/"</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co">#datadir_raw &lt;- "data/raw/"</span></span>
 <span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>datadir_processed <span class="ot">&lt;-</span> <span class="st">"data/processed/"</span></span>
 <span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>species_file <span class="ot">&lt;-</span> <span class="st">"ASDN_Daily_species.csv"</span></span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>snowsurvey_file <span class="ot">&lt;-</span> <span class="st">"ASDN_Snow_survey.csv"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>snowsurvey_file <span class="ot">&lt;-</span> <span class="st">"ASDN_Snow_survey.csv"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Import data</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Import the species</span></span>
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Import the snow cover data</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>snowsurvey_clean <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="fu">file.path</span>(datadir_processed, <span class="st">"snow_cover.csv"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Rows: 42830 Columns: 11
@@ -246,74 +244,139 @@ dbl (2): Year, Snow_cover
 <span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a><span class="co"># Clean NAs, set conditions to add NAs and replace elligible NAs with 0s. </span></span>
 <span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>total_snowsurvey_clean <span class="ot">&lt;-</span> snowsurvey_clean_cover <span class="sc">%&gt;%</span></span>
-<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a>    <span class="co"># When water cover + land cover == total cover AND total cover == 100 AND snow cover is NA, replace snow cover with 0. Else, just keep original values for snow cover.</span></span>
-<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>    <span class="at">Snow_cover =</span> <span class="fu">case_when</span>(</span>
-<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a>      (Water_cover <span class="sc">+</span> Land_cover <span class="sc">==</span> Total_cover) <span class="sc">&amp;</span> (Total_cover <span class="sc">==</span> <span class="dv">100</span>) <span class="sc">&amp;</span> (Snow_cover <span class="sc">==</span> <span class="cn">NA</span>) <span class="sc">~</span> <span class="dv">0</span>,</span>
-<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a>      <span class="at">.default =</span> Snow_cover</span>
-<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a>    ),</span>
-<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a>    <span class="co"># When snow cover + land cover == total cover AND total cover == 100 AND water cover is NA, replace that NA with 0. Else, just keep original values for water cover.</span></span>
-<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a>    <span class="at">Water_cover =</span> <span class="fu">case_when</span>(</span>
-<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a>      (Snow_cover <span class="sc">+</span> Land_cover <span class="sc">==</span> Total_cover) <span class="sc">&amp;</span> (Total_cover <span class="sc">==</span> <span class="dv">100</span>) <span class="sc">&amp;</span> (Water_cover <span class="sc">==</span> <span class="cn">NA</span>) <span class="sc">~</span> <span class="dv">0</span>,</span>
-<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a>      <span class="at">.default =</span> Water_cover</span>
-<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a>    ),</span>
-<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a>    <span class="co"># When water cover + snow cover == total cover AND total cover == 100 AND land cover is NA, replace that NA with 0. Else, just keep original values for land cover.</span></span>
-<span id="cb7-43"><a href="#cb7-43" aria-hidden="true" tabindex="-1"></a>    <span class="at">Land_cover =</span> <span class="fu">case_when</span>(</span>
-<span id="cb7-44"><a href="#cb7-44" aria-hidden="true" tabindex="-1"></a>      (Water_cover <span class="sc">+</span> Snow_cover <span class="sc">==</span> Total_cover) <span class="sc">&amp;</span> (Total_cover <span class="sc">==</span> <span class="dv">100</span>) <span class="sc">&amp;</span> (Land_cover <span class="sc">==</span> <span class="cn">NA</span>) <span class="sc">~</span> <span class="dv">0</span>,</span>
-<span id="cb7-45"><a href="#cb7-45" aria-hidden="true" tabindex="-1"></a>      <span class="at">.default =</span> Land_cover</span>
-<span id="cb7-46"><a href="#cb7-46" aria-hidden="true" tabindex="-1"></a>    )) <span class="sc">%&gt;%</span> </span>
-<span id="cb7-47"><a href="#cb7-47" aria-hidden="true" tabindex="-1"></a>    <span class="co"># I'm omitting the following part because I figured out how to do it more succinctly, but wanted to leave this in for myself to refer to for later projects.</span></span>
-<span id="cb7-48"><a href="#cb7-48" aria-hidden="true" tabindex="-1"></a>    <span class="co"># when all 4 columns are 0, set all values to NA (not much different from that anyway, but we don't want those extra empty 0s to be impacting any stats we try to pull from our dataset)</span></span>
-<span id="cb7-49"><a href="#cb7-49" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Land_cover = case_when(</span></span>
-<span id="cb7-50"><a href="#cb7-50" aria-hidden="true" tabindex="-1"></a>    <span class="co">#   (Land_cover == 0 &amp; Water_cover == 0 &amp; Snow_cover == 0 &amp; Total_cover == 0) ~ NA,</span></span>
-<span id="cb7-51"><a href="#cb7-51" aria-hidden="true" tabindex="-1"></a>    <span class="co">#   .default = Land_cover</span></span>
-<span id="cb7-52"><a href="#cb7-52" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ),</span></span>
-<span id="cb7-53"><a href="#cb7-53" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Water_cover = case_when(</span></span>
-<span id="cb7-54"><a href="#cb7-54" aria-hidden="true" tabindex="-1"></a>    <span class="co">#   (Land_cover == 0 &amp; Water_cover == 0 &amp; Snow_cover == 0 &amp; Total_cover == 0) ~ NA,</span></span>
-<span id="cb7-55"><a href="#cb7-55" aria-hidden="true" tabindex="-1"></a>    <span class="co">#   .default = Water_cover</span></span>
-<span id="cb7-56"><a href="#cb7-56" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ),</span></span>
-<span id="cb7-57"><a href="#cb7-57" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Snow_cover = case_when(</span></span>
-<span id="cb7-58"><a href="#cb7-58" aria-hidden="true" tabindex="-1"></a>    <span class="co">#   (Land_cover == 0 &amp; Water_cover == 0 &amp; Snow_cover == 0 &amp; Total_cover == 0) ~ NA,</span></span>
-<span id="cb7-59"><a href="#cb7-59" aria-hidden="true" tabindex="-1"></a>    <span class="co">#   .default = Snow_cover</span></span>
-<span id="cb7-60"><a href="#cb7-60" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ),</span></span>
-<span id="cb7-61"><a href="#cb7-61" aria-hidden="true" tabindex="-1"></a>    <span class="co"># total_clean = case_when(</span></span>
-<span id="cb7-62"><a href="#cb7-62" aria-hidden="true" tabindex="-1"></a>    <span class="co">#   (Land_cover == 0 &amp; Water_cover == 0 &amp; Snow_cover == 0 &amp; Total_cover == 0) ~ NA,</span></span>
-<span id="cb7-63"><a href="#cb7-63" aria-hidden="true" tabindex="-1"></a>    <span class="co">#   .default = Total_cover</span></span>
-<span id="cb7-64"><a href="#cb7-64" aria-hidden="true" tabindex="-1"></a>    <span class="co"># )) %&gt;% </span></span>
-<span id="cb7-65"><a href="#cb7-65" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rowwise</span>() <span class="sc">%&gt;%</span> <span class="co"># to perform mathematical operations rowwise (sum of specified columns)</span></span>
-<span id="cb7-66"><a href="#cb7-66" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb7-67"><a href="#cb7-67" aria-hidden="true" tabindex="-1"></a>    <span class="co"># When total cover = snow + water + land AND total cover == 100, keep value of total cover. Else, set to NA (make a new column name here)</span></span>
-<span id="cb7-68"><a href="#cb7-68" aria-hidden="true" tabindex="-1"></a>    <span class="at">total_clean =</span> <span class="fu">case_when</span>(</span>
-<span id="cb7-69"><a href="#cb7-69" aria-hidden="true" tabindex="-1"></a>      <span class="co"># When Total_cover is equal to the sum of snow, water, and land cover (remove NAs in this part of the operation) AND total cover is equal to 100, keep value for total cover. Else, replace with NA.</span></span>
-<span id="cb7-70"><a href="#cb7-70" aria-hidden="true" tabindex="-1"></a>      ((Total_cover <span class="sc">==</span> <span class="fu">sum</span>(Snow_cover, Water_cover, Land_cover, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)) <span class="sc">&amp;</span> (Total_cover <span class="sc">==</span> <span class="dv">100</span>)) <span class="sc">~</span> Total_cover),</span>
-<span id="cb7-71"><a href="#cb7-71" aria-hidden="true" tabindex="-1"></a>      <span class="at">.default =</span> <span class="cn">NA</span> <span class="co"># not confident about this (I'd rather inspect visually and figure out what's going on) but it does act as a flag that something in that row is amiss.</span></span>
-<span id="cb7-72"><a href="#cb7-72" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb7-73"><a href="#cb7-73" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-74"><a href="#cb7-74" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-75"><a href="#cb7-75" aria-hidden="true" tabindex="-1"></a><span class="co"># testing to see if I can set all values to NA if all values are 0 and/or NA (wouldn't want 0s that are actually NAs to be impacting any algebraic operation performed on those columns)</span></span>
-<span id="cb7-76"><a href="#cb7-76" aria-hidden="true" tabindex="-1"></a>total_snowsurvey_clean_2 <span class="ot">&lt;-</span> total_snowsurvey_clean <span class="sc">%&gt;%</span> </span>
-<span id="cb7-77"><a href="#cb7-77" aria-hidden="true" tabindex="-1"></a>  <span class="co"># when all 4 columns are 0 and/or NA, set all values to NA. Else, leave values as-is (or as previously transformed, in this case...)</span></span>
-<span id="cb7-78"><a href="#cb7-78" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">c</span>(<span class="st">"Snow_cover"</span>, <span class="st">"Land_cover"</span>, <span class="st">"Water_cover"</span>, <span class="st">"Total_cover"</span>),</span>
-<span id="cb7-79"><a href="#cb7-79" aria-hidden="true" tabindex="-1"></a>                 <span class="sc">~</span><span class="fu">ifelse</span>(<span class="fu">all</span>(. <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="cn">NA</span>)), <span class="cn">NA</span>, .)))</span>
-<span id="cb7-80"><a href="#cb7-80" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-81"><a href="#cb7-81" aria-hidden="true" tabindex="-1"></a><span class="co"># at site barr in 2010, there are many entries that appear to only be recording Snow_cover (has an integer, the others are 0 and Total_cover == Snow_cover).</span></span>
-<span id="cb7-82"><a href="#cb7-82" aria-hidden="true" tabindex="-1"></a><span class="co"># for these, I set Total_cover to NA unless Snow_cover == 100 (Snow_cover + Water_cover + Land_cover = Total_cover &amp; != 100, set to NA)</span></span>
-<span id="cb7-83"><a href="#cb7-83" aria-hidden="true" tabindex="-1"></a><span class="co"># when Snow_cover =0 and </span></span>
-<span id="cb7-84"><a href="#cb7-84" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-85"><a href="#cb7-85" aria-hidden="true" tabindex="-1"></a><span class="co"># checking to see if I accomplished what I wanted (I did!)</span></span>
-<span id="cb7-86"><a href="#cb7-86" aria-hidden="true" tabindex="-1"></a><span class="co"># total_snowsurvey_clean_2 %&gt;% </span></span>
-<span id="cb7-87"><a href="#cb7-87" aria-hidden="true" tabindex="-1"></a><span class="co">#   filter(is.na(total_clean)) %&gt;% </span></span>
-<span id="cb7-88"><a href="#cb7-88" aria-hidden="true" tabindex="-1"></a><span class="co">#   select(-Notes, -Observer, -Location)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rowwise</span>() <span class="sc">%&gt;%</span> <span class="co"># to perform mathematical operations row-wise (sum of specified columns)</span></span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a>    <span class="co"># note: creating new total_clean column so that I can keep the &lt;100 values in Total_cover as a flag for issues with the data</span></span>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ---------------- total_clean = NA when Total_cover != 100 or != sum of other cover type columns --------------</span></span>
+<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a>    <span class="co"># When total cover = snow + water + land AND total cover == 100, keep value of total cover. Else, set to NA (make a new column name here)</span></span>
+<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a>    <span class="at">total_clean =</span> <span class="fu">case_when</span>(</span>
+<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a>      <span class="co"># When Total_cover is equal to the sum of snow, water, and land cover (remove NAs in this part of the operation) AND total cover is equal to 100, keep value for total cover. Else, replace with NA.</span></span>
+<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a>      ((Total_cover <span class="sc">==</span> <span class="fu">sum</span>(Snow_cover, Water_cover, Land_cover, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)) <span class="sc">&amp;</span> (Total_cover <span class="sc">==</span> <span class="dv">100</span>)) <span class="sc">~</span> Total_cover,</span>
+<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a>      <span class="at">.default =</span> <span class="cn">NA</span> <span class="co"># not confident about this (I'd rather inspect visually and figure out what's going on) but it does act as a flag that something in that row is amiss.</span></span>
+<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ---------- replace NAs with 0s where appropriate -------------------------</span></span>
+<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a>    <span class="co"># overall concept for this section: </span></span>
+<span id="cb7-43"><a href="#cb7-43" aria-hidden="true" tabindex="-1"></a>    <span class="co"># if/when total cover == sum of other 2 columns (even if one of those is NA), AND total cover == 100 AND column currently is NA, replace NA with 0. Else, keep original value for column.</span></span>
+<span id="cb7-44"><a href="#cb7-44" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb7-45"><a href="#cb7-45" aria-hidden="true" tabindex="-1"></a>    <span class="co"># When total cover == water cover + land cover (even if one of them == NA) AND total cover == 100 AND snow cover is NA, replace snow cover with 0. Else, just keep original values for snow cover.</span></span>
+<span id="cb7-46"><a href="#cb7-46" aria-hidden="true" tabindex="-1"></a>    <span class="at">Snow_cover =</span> <span class="fu">case_when</span>(</span>
+<span id="cb7-47"><a href="#cb7-47" aria-hidden="true" tabindex="-1"></a>      ((Total_cover <span class="sc">==</span> <span class="fu">sum</span>(Water_cover, Land_cover, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)) <span class="sc">&amp;</span> (Total_cover <span class="sc">==</span> <span class="dv">100</span>) <span class="sc">&amp;</span> (<span class="fu">is.na</span>(Snow_cover))) <span class="sc">~</span> <span class="dv">0</span>,</span>
+<span id="cb7-48"><a href="#cb7-48" aria-hidden="true" tabindex="-1"></a>      <span class="at">.default =</span> Snow_cover <span class="co"># else keep original value</span></span>
+<span id="cb7-49"><a href="#cb7-49" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb7-50"><a href="#cb7-50" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb7-51"><a href="#cb7-51" aria-hidden="true" tabindex="-1"></a>    <span class="co"># When total cover == snow cover + land cover (even if one of them == NA) AND total cover == 100 AND water cover is NA, replace that NA with 0. Else, just keep original values for water cover.</span></span>
+<span id="cb7-52"><a href="#cb7-52" aria-hidden="true" tabindex="-1"></a>    <span class="at">Water_cover =</span> <span class="fu">case_when</span>(</span>
+<span id="cb7-53"><a href="#cb7-53" aria-hidden="true" tabindex="-1"></a>      ((Total_cover <span class="sc">==</span> <span class="fu">sum</span>(Snow_cover, Land_cover, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)) <span class="sc">&amp;</span> (Total_cover <span class="sc">==</span> <span class="dv">100</span>) <span class="sc">&amp;</span> (<span class="fu">is.na</span>(Water_cover))) <span class="sc">~</span> <span class="dv">0</span>,</span>
+<span id="cb7-54"><a href="#cb7-54" aria-hidden="true" tabindex="-1"></a>      <span class="at">.default =</span> Water_cover <span class="co"># else keep original value</span></span>
+<span id="cb7-55"><a href="#cb7-55" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb7-56"><a href="#cb7-56" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb7-57"><a href="#cb7-57" aria-hidden="true" tabindex="-1"></a>    <span class="co"># When total cover == water cover + snow cover (even if one of them == NA) AND total cover == 100 AND land cover is NA, replace that NA with 0. Else, just keep original values for land cover.</span></span>
+<span id="cb7-58"><a href="#cb7-58" aria-hidden="true" tabindex="-1"></a>    <span class="at">Land_cover =</span> <span class="fu">case_when</span>(</span>
+<span id="cb7-59"><a href="#cb7-59" aria-hidden="true" tabindex="-1"></a>      ((Total_cover <span class="sc">==</span> <span class="fu">sum</span>(Snow_cover, Water_cover, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)) <span class="sc">&amp;</span> (Total_cover <span class="sc">==</span> <span class="dv">100</span>) <span class="sc">&amp;</span> (<span class="fu">is.na</span>(Land_cover))) <span class="sc">~</span> <span class="dv">0</span>,</span>
+<span id="cb7-60"><a href="#cb7-60" aria-hidden="true" tabindex="-1"></a>      <span class="at">.default =</span> Land_cover <span class="co"># else keep original value</span></span>
+<span id="cb7-61"><a href="#cb7-61" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb7-62"><a href="#cb7-62" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span> </span>
+<span id="cb7-63"><a href="#cb7-63" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb7-64"><a href="#cb7-64" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb7-65"><a href="#cb7-65" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb7-66"><a href="#cb7-66" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ------------- replace 0s with NAs where appropriate ---------------------</span></span>
+<span id="cb7-67"><a href="#cb7-67" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Overall concept for this section:</span></span>
+<span id="cb7-68"><a href="#cb7-68" aria-hidden="true" tabindex="-1"></a>    <span class="co"># when all 4 columns are 0, set all values to NA (not much different from that anyway, but we don't want those extra empty 0s to be impacting any stats we try to pull from our dataset) (ideally I'd use a mutate + across here, but I couldn't get that to work)</span></span>
+<span id="cb7-69"><a href="#cb7-69" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb7-70"><a href="#cb7-70" aria-hidden="true" tabindex="-1"></a>    <span class="at">Snow_cover =</span> <span class="fu">case_when</span>(</span>
+<span id="cb7-71"><a href="#cb7-71" aria-hidden="true" tabindex="-1"></a>      ((<span class="dv">0</span> <span class="sc">==</span> <span class="fu">sum</span>(Snow_cover, Water_cover, Land_cover, <span class="at">na.rm =</span> <span class="cn">TRUE</span>))) <span class="sc">~</span> <span class="cn">NA</span>,</span>
+<span id="cb7-72"><a href="#cb7-72" aria-hidden="true" tabindex="-1"></a>      <span class="at">.default =</span> Snow_cover <span class="co"># else keep original value</span></span>
+<span id="cb7-73"><a href="#cb7-73" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb7-74"><a href="#cb7-74" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb7-75"><a href="#cb7-75" aria-hidden="true" tabindex="-1"></a>    <span class="at">Water_cover =</span> <span class="fu">case_when</span>(</span>
+<span id="cb7-76"><a href="#cb7-76" aria-hidden="true" tabindex="-1"></a>      ((<span class="dv">0</span> <span class="sc">==</span> <span class="fu">sum</span>(Snow_cover, Water_cover, Land_cover, <span class="at">na.rm =</span> <span class="cn">TRUE</span>))) <span class="sc">~</span> <span class="cn">NA</span>,</span>
+<span id="cb7-77"><a href="#cb7-77" aria-hidden="true" tabindex="-1"></a>      <span class="at">.default =</span> Water_cover <span class="co"># else keep original value</span></span>
+<span id="cb7-78"><a href="#cb7-78" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb7-79"><a href="#cb7-79" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb7-80"><a href="#cb7-80" aria-hidden="true" tabindex="-1"></a>     <span class="at">Land_cover =</span> <span class="fu">case_when</span>(</span>
+<span id="cb7-81"><a href="#cb7-81" aria-hidden="true" tabindex="-1"></a>      ((<span class="dv">0</span> <span class="sc">==</span> <span class="fu">sum</span>(Snow_cover, Water_cover, Land_cover, <span class="at">na.rm =</span> <span class="cn">TRUE</span>))) <span class="sc">~</span> <span class="cn">NA</span>,</span>
+<span id="cb7-82"><a href="#cb7-82" aria-hidden="true" tabindex="-1"></a>      <span class="at">.default =</span> Land_cover <span class="co"># else keep original value</span></span>
+<span id="cb7-83"><a href="#cb7-83" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb7-84"><a href="#cb7-84" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb7-85"><a href="#cb7-85" aria-hidden="true" tabindex="-1"></a>    <span class="co"># leaving Total_cover in tact as a flag for "bad"/erroneous data.</span></span>
+<span id="cb7-86"><a href="#cb7-86" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb7-87"><a href="#cb7-87" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span> </span>
+<span id="cb7-88"><a href="#cb7-88" aria-hidden="true" tabindex="-1"></a>  <span class="co"># moving new total_clean column after Total_cover column for easier direct visual comparison</span></span>
+<span id="cb7-89"><a href="#cb7-89" aria-hidden="true" tabindex="-1"></a>  <span class="fu">relocate</span>(<span class="st">"total_clean"</span>, <span class="at">.after =</span> <span class="st">"Total_cover"</span>)</span>
+<span id="cb7-90"><a href="#cb7-90" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-91"><a href="#cb7-91" aria-hidden="true" tabindex="-1"></a><span class="co"># view output</span></span>
+<span id="cb7-92"><a href="#cb7-92" aria-hidden="true" tabindex="-1"></a>total_snowsurvey_clean</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 42,830 × 12
+# Rowwise: 
+   Site   Year Date      Plot  Location Snow_cover Water_cover Land_cover
+   &lt;chr&gt; &lt;dbl&gt; &lt;chr&gt;     &lt;chr&gt; &lt;chr&gt;         &lt;dbl&gt;       &lt;dbl&gt;      &lt;dbl&gt;
+ 1 barr   2011 29-May-11 brw1  b10              90           0         10
+ 2 barr   2011 29-May-11 brw1  b12             100           0          0
+ 3 barr   2011 29-May-11 brw1  b2               90           0         10
+ 4 barr   2011 29-May-11 brw1  b4              100           0          0
+ 5 barr   2011 29-May-11 brw1  b6               95           0          5
+ 6 barr   2011 29-May-11 brw1  b8               95           0          5
+ 7 barr   2011 29-May-11 brw1  d10              95           0          5
+ 8 barr   2011 29-May-11 brw1  d12              90           0         10
+ 9 barr   2011 29-May-11 brw1  d2               95           0          5
+10 barr   2011 29-May-11 brw1  d4               95           0          5
+# ℹ 42,820 more rows
+# ℹ 4 more variables: Total_cover &lt;chr&gt;, total_clean &lt;chr&gt;, Observer &lt;chr&gt;,
+#   Notes &lt;chr&gt;</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>total_snowsurvey_clean <span class="sc">%&gt;%</span> </span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="fu">is.na</span>(total_clean)) <span class="sc">%&gt;%</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>Notes, <span class="sc">-</span>Observer, <span class="sc">-</span>Location)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 5,407 × 9
+# Rowwise: 
+   Site   Year Date      Plot  Snow_cover Water_cover Land_cover Total_cover
+   &lt;chr&gt; &lt;dbl&gt; &lt;chr&gt;     &lt;chr&gt;      &lt;dbl&gt;       &lt;dbl&gt;      &lt;dbl&gt; &lt;chr&gt;      
+ 1 barr   2011 29-May-11 brw6          NA          NA         NA &lt;NA&gt;       
+ 2 barr   2011 29-May-11 brw6          NA          NA         NA &lt;NA&gt;       
+ 3 barr   2011 29-May-11 brw6          NA          NA         NA &lt;NA&gt;       
+ 4 barr   2011 29-May-11 brw6          NA          NA         NA &lt;NA&gt;       
+ 5 barr   2011 29-May-11 brw6          NA          NA         NA &lt;NA&gt;       
+ 6 barr   2011 29-May-11 brw6          NA          NA         NA &lt;NA&gt;       
+ 7 barr   2011 29-May-11 brw6          NA          NA         NA &lt;NA&gt;       
+ 8 barr   2011 29-May-11 brw6          NA          NA         NA &lt;NA&gt;       
+ 9 barr   2011 29-May-11 brw6          NA          NA         NA &lt;NA&gt;       
+10 barr   2011 29-May-11 brw6          NA          NA         NA &lt;NA&gt;       
+# ℹ 5,397 more rows
+# ℹ 1 more variable: total_clean &lt;chr&gt;</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 5,407 rows!</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="co">#total_snowsurvey_clean %&gt;% filter(is.na(Water_cover))</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># testing to see if I can set all values to NA if all values are 0 and/or NA (wouldn't want 0s that are actually NAs to be impacting any algebraic operation performed on those columns)</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="co"># this ended up not working (and messing up my cleaned dataframe)</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="co"># total_snowsurvey_clean_2 &lt;- total_snowsurvey_clean %&gt;% </span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="co">#   # when all 4 columns are 0 and/or NA, set all values to NA. Else, leave values as-is (or as previously transformed, in this case...)</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="co">#   mutate(across(c("Snow_cover", "Land_cover", "Water_cover", "Total_cover"),</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="co">#                 # if all are 0 or NA, replace all with NA, else, do nothing.</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="co">#                  ~ifelse(all(. %in% c(0, NA)), NA, .)))</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="co"># at site barr in 2010, there are many entries that appear to only be recording Snow_cover (has an integer, the others are 0 and Total_cover == Snow_cover).</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="co"># for these, I set Total_cover to NA unless Snow_cover == 100 (Snow_cover + Water_cover + Land_cover = Total_cover &amp; != 100, set to NA)</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a><span class="co"># when Snow_cover =0 and </span></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a><span class="co"># checking to see if I accomplished what I wanted (I did not!)</span></span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a><span class="co"># total_snowsurvey_clean_2 %&gt;% </span></span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a><span class="co">#   filter(is.na(total_clean)) %&gt;% </span></span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a><span class="co">#   select(-Notes, -Observer, -Location)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Outputting: all_cover_fixed_YOURNAME.csv in the data/processed folder</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Save output as all_cover_fixed_YOURNAME.csv</span></span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="co"># note: total_clean is the new cleaned Total_cover column</span></span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv</span>(total_snowsurvey_clean_2, <span class="fu">file.path</span>(datadir_processed, <span class="st">"all_cover_fixed_ANNARAMJI.csv"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Save output as all_cover_fixed_YOURNAME.csv</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="co"># note: total_clean is the new cleaned Total_cover column</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv</span>(total_snowsurvey_clean, <span class="fu">file.path</span>(datadir_processed, <span class="st">"all_cover_fixed_ANNARAMJI.csv"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 </section>

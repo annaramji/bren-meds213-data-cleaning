@@ -1,0 +1,23 @@
+
+
+
+Testing to see output of csv in blank environment
+
+```{r}
+# Libraries
+library(tidyverse)
+
+# file names
+datadir_processed <- "data/processed/"
+
+snowsurvey_file <- "ASDN_Snow_survey.csv"
+
+# import cleaned / final (all cover cleaned)
+snowsurvey_clean <- read_csv(file.path(datadir_processed, "all_cover_fixed_ANNARAMJI.csv"))
+
+```
+
+```{r}
+snowsurvey_clean
+```
+

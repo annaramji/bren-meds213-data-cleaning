@@ -51,16 +51,15 @@ snowsurvey_clean <- read_csv(file.path(datadir_processed, "snow_cover.csv"))
 
 ```{r}
 # explore
-snowsurvey_clean %>% 
-  count(Water_cover) %>% 
-  filter(is.na(as.numeric(Water_cover)))
+# snowsurvey_clean %>% 
+#   count(Water_cover) %>% 
+#   filter(is.na(as.numeric(Water_cover)))
 # looks like there are similar issues with "-", ".", "n/a", "unk" and actual NAs
 
 # snowsurvey_csv %>% 
 #   filter(Water_cover == ".")
 
 # it seems like most of these are empty and can be replaced with NA. The same is true for the other symbols and phrases.
-
 snowsurvey_clean_water <- snowsurvey_clean %>% 
   mutate(Water_cover = ifelse(Water_cover == ".", NA, Water_cover)) %>%
   mutate(Water_cover = ifelse(Water_cover == "-", NA, Water_cover)) %>%
@@ -83,9 +82,10 @@ snowsurvey_clean_water <- snowsurvey_clean_water %>%
 ## Cleaning Land_cover
 
 ```{r}
-snowsurvey_clean %>% 
-  count(Land_cover) %>% 
-  filter(is.na(as.numeric(Land_cover)))
+# inspect NAs in Land_cover column
+# snowsurvey_clean %>% 
+#   count(Land_cover) %>% 
+#   filter(is.na(as.numeric(Land_cover)))
 
 # same issues with "-", "." (585 of these!), "n/a" and "unk".
 
@@ -102,7 +102,7 @@ snowsurvey_clean_land <- snowsurvey_clean_water %>%
   
   
 # snowsurvey_clean_land %>% filter(Land_cover > 100) # returns 0 entries
-snowsurvey_clean_land %>% filter(Land_cover < 0) # returns 2 entries
+# snowsurvey_clean_land %>% filter(Land_cover < 0) # returns 2 entries
 
 # in the following row:
 # barr   2011 31-May-… brw3  d10              NA           0       -100 100         abankert NA  
@@ -137,24 +137,23 @@ question: turn NAs to 0s if the other columns add to 100?
 # if column b + c = 100 and a is NA, set a to 0
 # if column a + c = 100 and b is NA, set b to 0
 
+# END pseudo-code
+
 # make a copy of the most updated cleaned cover df
-cover_snowsurvey_clean <- snowsurvey_clean_land
+snowsurvey_clean_cover <- snowsurvey_clean_land
 
-total_cover_cleaned <- snowsurvey_clean_land %>% 
-  mutate(total_clean = ifelse((Snow_cover + Land_cover + Water_cover) == 100, Total_cover, NA))
+# 
+# total_cover_cleaned <- snowsurvey_clean_land %>% 
+#   mutate(total_clean = ifelse((Snow_cover + Land_cover + Water_cover) == 100, Total_cover, NA))
 
-total_cover_cleaned %>% 
-  filter(is.na(total_clean))
+# check NA rows
+# total_cover_cleaned %>% 
+#   filter(is.na(total_clean))
 
 
-
-total_snowsurvey_clean <- cover_snowsurvey_clean %>%
+# Clean NAs, set conditions to add NAs and replace elligible NAs with 0s. 
+total_snowsurvey_clean <- snowsurvey_clean_cover %>%
   mutate(
-    # When total cover = snow + water + land AND total cover == 100, keep value of total cover. Else, set to NA
-    total_clean = case_when(
-      ((Total_cover == Snow_cover + Water_cover + Land_cover) & (Total_cover == 100)) ~ Total_cover,
-      .default = NA # not confident about this (I'd rather inspect visually and figure out what's going on) but it does act as a flag that something in that row is amiss.
-    ),
     
     # When water cover + land cover == total cover AND total cover == 100 AND snow cover is NA, replace snow cover with 0. Else, just keep original values for snow cover.
     Snow_cover = case_when(
@@ -172,15 +171,59 @@ total_snowsurvey_clean <- cover_snowsurvey_clean %>%
     Land_cover = case_when(
       (Water_cover + Snow_cover == Total_cover) & (Total_cover == 100) & (Land_cover == NA) ~ 0,
       .default = Land_cover
-    ),
-    
-    # when all 3 columns (4 columns) are 0, set all values to NA
-)
+    )) %>% 
+    # I'm omitting the following part because I figured out how to do it more succinctly, but wanted to leave this in for myself to refer to for later projects.
+    # when all 4 columns are 0, set all values to NA (not much different from that anyway, but we don't want those extra empty 0s to be impacting any stats we try to pull from our dataset)
+    # Land_cover = case_when(
+    #   (Land_cover == 0 & Water_cover == 0 & Snow_cover == 0 & Total_cover == 0) ~ NA,
+    #   .default = Land_cover
+    # ),
+    # Water_cover = case_when(
+    #   (Land_cover == 0 & Water_cover == 0 & Snow_cover == 0 & Total_cover == 0) ~ NA,
+    #   .default = Water_cover
+    # ),
+    # Snow_cover = case_when(
+    #   (Land_cover == 0 & Water_cover == 0 & Snow_cover == 0 & Total_cover == 0) ~ NA,
+    #   .default = Snow_cover
+    # ),
+    # total_clean = case_when(
+    #   (Land_cover == 0 & Water_cover == 0 & Snow_cover == 0 & Total_cover == 0) ~ NA,
+    #   .default = Total_cover
+    # )) %>% 
+  rowwise() %>% # to perform mathematical operations rowwise (sum of specified columns)
+  mutate(
+    # When total cover = snow + water + land AND total cover == 100, keep value of total cover. Else, set to NA (make a new column name here)
+    total_clean = case_when(
+      # When Total_cover is equal to the sum of snow, water, and land cover (remove NAs in this part of the operation) AND total cover is equal to 100, keep value for total cover. Else, replace with NA.
+      ((Total_cover == sum(Snow_cover, Water_cover, Land_cover, na.rm = TRUE)) & (Total_cover == 100)) ~ Total_cover),
+      .default = NA # not confident about this (I'd rather inspect visually and figure out what's going on) but it does act as a flag that something in that row is amiss.
+    )
 
+
+# testing to see if I can set all values to NA if all values are 0 and/or NA (wouldn't want 0s that are actually NAs to be impacting any algebraic operation performed on those columns)
+total_snowsurvey_clean_2 <- total_snowsurvey_clean %>% 
+  # when all 4 columns are 0 and/or NA, set all values to NA. Else, leave values as-is (or as previously transformed, in this case...)
+  mutate(across(c("Snow_cover", "Land_cover", "Water_cover", "Total_cover"),
+                 ~ifelse(all(. %in% c(0, NA)), NA, .)))
 
 # at site barr in 2010, there are many entries that appear to only be recording Snow_cover (has an integer, the others are 0 and Total_cover == Snow_cover).
 # for these, I set Total_cover to NA unless Snow_cover == 100 (Snow_cover + Water_cover + Land_cover = Total_cover & != 100, set to NA)
 # when Snow_cover =0 and 
-# when all 3 columns (4 columns) are 0, set all values to NA
+
+# checking to see if I accomplished what I wanted (I did!)
+# total_snowsurvey_clean_2 %>% 
+#   filter(is.na(total_clean)) %>% 
+#   select(-Notes, -Observer, -Location)
+```
+
+Outputting: all_cover_fixed_YOURNAME.csv in the data/processed folder
+
+
+```{r}
+# Save output as all_cover_fixed_YOURNAME.csv
+
+# note: total_clean is the new cleaned Total_cover column
+write_csv(total_snowsurvey_clean_2, file.path(datadir_processed, "all_cover_fixed_ANNARAMJI.csv"))
+
 ```
 

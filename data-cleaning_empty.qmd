@@ -12,6 +12,7 @@ format: html
 library(tidyr)
 library(dplyr)
 library(readr)
+library(naniar)
 
 # file names
 datadir_raw <- "data/raw/"
@@ -38,6 +39,15 @@ glimpse(snowsurvey_csv)
 
 ```
 (everything other than the Year column is a character... which presents a problem! can be challenging to go from character to integer, easier to go the other direction)
+
+
+Checking NAs (May 15 naniar test)
+```{r}
+snowsurvey_csv %>% 
+  miss_var_summary()
+
+```
+
 
 Ok, the types are not what we were expecting for the percentages of cover. Let's find out why:
 

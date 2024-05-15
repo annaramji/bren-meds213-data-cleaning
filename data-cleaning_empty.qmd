@@ -8,7 +8,10 @@ format: html
 #| message: false  
 
 # Libraries
-library(tidyverse)
+#library(tidyverse)
+library(tidyr)
+library(dplyr)
+library(readr)
 
 # file names
 datadir_raw <- "data/raw/"
